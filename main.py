@@ -136,7 +136,6 @@ def main():
     else:
         create_crawl_all(slug,id,ep_json_2)
 
-
 def help():
     usage = f"\t-k, --keyword (str):\t\tSpecify the keyword to search\n" \
             f"\t--jdownloadpath (Path):\t\tDestination folder for the anime dir\n" \
