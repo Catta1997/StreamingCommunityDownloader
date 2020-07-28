@@ -1,20 +1,59 @@
 import requests,os,subprocess
 import sys
+import getopt
 import html
 import json
 from bs4 import BeautifulSoup
 #config
+config = {'crawl_path': None, 'download_path': None}
 one_file = True #create a single crawljob for Series with multiple season
-download_path = os.path.dirname(os.path.realpath(__file__)) #path  where jdownloader will download the files
-crawl_file_l = os.path.dirname(os.path.realpath(__file__)) #folder watch location
 
-def create_crawl_all(download_path,slug,id,ep_list):
-    crawl_file_l = os.path.dirname(os.path.realpath(__file__))
+def interactive_mode():
+    try:
+        keyword = input("Keyword: ")
+    except KeyboardInterrupt:
+        sys.exit("Aborted")
+    return keyword
+def cli_mode():
+    keyword = None
+    global config
+    argv = sys.argv[1:]
+    try:
+        opts, args = getopt.getopt(argv, 'k:hv',['keyword=', 'crawlpath=', 'jdownloadpath='])
+    except getopt.GetoptError:
+        # stampa l'informazione di aiuto ed esce:
+        help()
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt in ['-k', '--keyword']:
+            keyword = arg
+        if opt in ['--jdownloadpath']:
+            config['download_path'] = arg
+        if opt in ['--crawlpath']:
+            config['crawl_path'] = arg
+        if opt in ['-h', '--help']:
+            help()
+            sys.exit(0)
+    if keyword is None:
+        logger.warning("No keyword selected")
+        sys.exit(1)
+    return keyword
+
+def create_crawl_all(slug,id,ep_list):
     name = slug + '.crawljob'
     season = 1
+    if config['download_path'] == None:
+        download_path = os.path.dirname(os.path.realpath(__file__))
+    else:
+        download_path = config['download_path']
+
+    if config['crawl_path'] == None:
+        crawl_path = os.path.dirname(os.path.realpath(__file__))
+    else:
+        crawl_path = config['crawl_path']
     for k in ep_list:
         ep_list_2 = k['episodes']
-        with open(name, 'a') as f:
+        with open(crawl_path+'/'+name, 'a') as f:
             for i in ep_list_2:
                 ep_id = i['id']
                 f.write("{\n")
@@ -28,9 +67,17 @@ def create_crawl_all(download_path,slug,id,ep_list):
         season += 1
     f.close()
 
-def create_crawl(download_path,slug,id,ep_list, season):
+def create_crawl(slug,id,ep_list, season):
     name = slug+"_Season_" + str(season) + '.crawljob'
-    with open(name, 'w') as f:
+    if config['download_path'] == None:
+        download_path = os.path.dirname(os.path.realpath(__file__))
+    else:
+        download_path = config['download_path']
+    if config['crawl_path'] == None:
+        crawl_path = os.path.dirname(os.path.realpath(__file__))
+    else:
+        crawl_path = config['crawl_path']
+    with open(crawl_path+'/'+name, 'w') as f:
         for i in ep_list:
             ep_id = i['id']
             f.write("{\n")
@@ -44,7 +91,11 @@ def create_crawl(download_path,slug,id,ep_list, season):
         f.close()
 
 def main():
-    URL = "https://streamingcommunity.to/search?q=chicago"
+    if len(sys.argv) == 1:
+        keyword = interactive_mode()
+    else:
+        keyword = cli_mode()
+    URL = "https://streamingcommunity.to/search?q=%s"%keyword
     r = requests.get(url = URL, params = {}) 
     pastebin_url = r.text 
     my_html = pastebin_url
@@ -68,7 +119,6 @@ def main():
     id = "180"
     # end debug part
     URL = ("https://streamingcommunity.to/titles/%s-%s"%(id,slug))
-    print(URL)
     r = requests.get(url = URL, params = {}) 
     pastebin_url = r.text 
     my_html = pastebin_url
@@ -81,19 +131,18 @@ def main():
         x = 1
         for k in ep_json_2:
             test = k['episodes']
-            create_crawl(download_path,slug,id,test,x)
+            create_crawl(slug,id,test,x)
             x +=1
     else:
-        create_crawl_all(download_path,slug,id,ep_json_2)
-def format_title(old_title):
-    # Formatting the string
-    new_title = str.capitalize(str.lower(old_title))
+        create_crawl_all(slug,id,ep_json_2)
 
-    replace_chars = [{'old': ' ', 'new': '_'}, {'old': '!', 'new': ''}, {'old': '?', 'new': ''},
-                     {'old': ':', 'new': ''}, {'old': ',', 'new': ''}, {'old': '\'', 'new': ''}]
-    for char in replace_chars:
-        new_title = str.replace(new_title, char['old'], char['new'])
 
-    return new_title
+def help():
+    usage = f"\t-k, --keyword (str):\t\tSpecify the keyword to search\n" \
+            f"\t--jdownloadpath (Path):\t\tDestination folder for the anime dir\n" \
+            f"\t--crawlpath (Path):\t\tDestination folder for the crawljobs\n" \
+            f"\t-h, --help:\t\t\tShow this screen\n"
+    print(usage)
+
 if __name__ == "__main__":
     main()
