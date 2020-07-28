@@ -12,7 +12,7 @@ def interactive_mode():
     try:
         keyword = input("Keyword: ")
     except KeyboardInterrupt:
-        sys.exit("Aborted")
+        sys.exit()
     return keyword
 def cli_mode():
     keyword = None
@@ -114,7 +114,7 @@ def main():
         print("--------")
     #id = input("ID:")
 
-    #debug part
+    #debug part 
     slug = "chicago-fire"
     id = "180"
     # end debug part
