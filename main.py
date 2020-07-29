@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 config = {'crawl_path': None, 'download_path': None}
 one_file = True #create a single crawljob for Series with multiple season
 
-Down_YT = False # BETA
+Down_YT = True # BETA
 def interactive_mode():
     try:
         keyword = input("Keyword: ")
@@ -116,28 +116,24 @@ def main():
     ser_id = list()
     ser_slug = list()
     for i in playerstuff:
-        #name = i['name']
         id = i['id']
         ser_id.append(id)
         slug = i['slug']
         ser_slug.append(slug)
-        ##
         print("Result:\t" + str(num))
         print ("Name:\t" + i['name'])
         print("Type:\t"+ i['type'])
         print("Plot:\t"+ i['plot'])
-        #print("ID:\t" + str(id))
         print(("Seasons:\t" + str(i['seasons_count'])))
         print("-------------------")
         num +=1
     print("-------------------")
     print("-------------------")
     id = int(input("Result:"))
-
-    #debug part 
+    #get info
     slug = str(ser_slug[id-1])
     id = str(ser_id[id-1])
-    # end debug part
+
     URL = ("https://streamingcommunity.to/titles/%s-%s"%(id,slug))
     r = requests.get(url = URL, params = {}) 
     pastebin_url = r.text 
@@ -147,6 +143,7 @@ def main():
     episodes_2 = json_data_2
     ep_json_2 = json.loads(episodes_2)
     text = ep_json_2[0]['episodes']
+    #crate crawljob or start download with youtube_dl
     if Down_YT:
         youtube_downloader(ep_json_2,slug,id)
     else:
@@ -165,9 +162,15 @@ def help():
             f"\t--crawlpath (Path):\t\tDestination folder for the crawljobs\n" \
             f"\t-h, --help:\t\t\tShow this screen\n"
     print(usage)
-
-
-
+def my_hook(self, d):
+        if d['status'] == 'finished':
+            file_tuple = os.path.split(os.path.abspath(d['filename']))
+            print("Done downloading {}".format(file_tuple[1]))
+        if d['status'] == 'downloading':
+            p = d['_percent_str']
+            p = p.replace('%','')
+            self.progress.setValue(float(p))
+            print(d['filename'], d['_percent_str'], d['_eta_str'])
 def youtube_downloader(ep_list,slug,id):
     content_dir = os.path.join("Download", slug)
     if not os.path.exists(content_dir):
@@ -185,25 +188,35 @@ def youtube_downloader(ep_list,slug,id):
             print("Installa ffmpeg, consulta la pagina su GitHub per maggiori informazioni")
             quit()
         ffmpeg_local = os.path.join( _dir, "ffmpeg", ffmpeg_dir_files[0], "bin")
-    pbar = tqdm(ep_list, bar_format=("{l_bar}{bar}| {n_fmt}/{total_fmt}"))
-    for episode in pbar:
+    n_episoeds= 0
+    #calc numbero of episodes
+    for episode in ep_list:
+        ep_list_2 = episode['episodes']
+        for i in ep_list_2:
+            n_episoeds +=1
+    #print(n_episoeds)
+    #pbar = tqdm(ep_list, bar_format=("{l_bar}{bar}| {n_fmt}/{total_fmt}"))
+    print("Downloadin %d episodes"%n_episoeds)
+    episode_pbar = tqdm(total=n_episoeds,bar_format=("{l_bar}{bar}| {n_fmt}/{total_fmt}"))
+    season = 1
+    for episode in ep_list:
         ydl_opts = {
             "format": "best",
             "outtmpl": "%s/%s.%%(ext)s" % (content_dir, slug),
             "continuedl": True,
             "quiet" : True,
-            "simulate":True, # Debug: simulate a dowload 
+            #"simulate":True, # Debug: simulate a dowload
         }
         if ffmpeg_local:
             ydl_opts["ffmpeg_location"] = ffmpeg_local
         ep_list_2 = episode['episodes']
-        season = 1
         episode_n = 1
+        #epbar = tqdm(ep_list_2, bar_format=("{l_bar}{bar}| {n_fmt}/{total_fmt}"))
         for i in ep_list_2:
             ep_id = i['id']
             with YoutubeDL(ydl_opts) as ydl:
-            #meta = ydl.extract_info(episode.link, download=False) 
-                pbar.set_description("Processing: %s" % slug + ' Season ' + str(season) + ' ep ' + str(episode_n))
+                #pbar.set_description("Processing %s: " % slug)
+                episode_pbar.set_description("Processing %s: " % slug + 'Season ' + str(season) +', episode: ' + str(episode_n))
                 link = "https://streamingcommunity.to/watch/%s?e=%s\n"%(id,ep_id)
                 r = requests.get(url = link, params = {}) 
                 pastebin_url = r.text 
@@ -214,11 +227,12 @@ def youtube_downloader(ep_list,slug,id):
                 ep_json = json.loads(episodes)
                 try:
                     link = ep_json['video_url']
-                    ydl.download([link])
+                    #print(meta['filesize'])
+                    x = ydl.download([link])
+                    episode_pbar.update(1)
                 except KeyboardInterrupt:
                     sys.exit()
                 episode_n +=1
-            #f.write("\ttext=https://streamingcommunity.to/watch/%s?e=%s\n"%(id,ep_id))
         season += 1
         episode_n = 1
 
