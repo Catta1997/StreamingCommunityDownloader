@@ -112,19 +112,31 @@ def main():
     episodes = json_data
     ep_json = json.loads(episodes)
     playerstuff = ep_json[0]
+    num = 1
+    ser_id = list()
+    ser_slug = list()
     for i in playerstuff:
-        print (i['name'])
-        name = i['name']
-        print (i['id'])
+        #name = i['name']
         id = i['id']
-        print (i['slug'])
+        ser_id.append(id)
         slug = i['slug']
-        print("--------")
-    #id = input("ID:")
+        ser_slug.append(slug)
+        ##
+        print("Result:\t" + str(num))
+        print ("Name:\t" + i['name'])
+        print("Type:\t"+ i['type'])
+        print("Plot:\t"+ i['plot'])
+        #print("ID:\t" + str(id))
+        print(("Seasons:\t" + str(i['seasons_count'])))
+        print("-------------------")
+        num +=1
+    print("-------------------")
+    print("-------------------")
+    id = int(input("Result:"))
 
     #debug part 
-    slug = "chicago-fire"
-    id = "180"
+    slug = str(ser_slug[id-1])
+    id = str(ser_id[id-1])
     # end debug part
     URL = ("https://streamingcommunity.to/titles/%s-%s"%(id,slug))
     r = requests.get(url = URL, params = {}) 
