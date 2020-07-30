@@ -3,6 +3,7 @@ import sys
 import getopt
 import html
 import json
+import signal
 from shutil import which
 from youtube_dl import YoutubeDL
 from tqdm import trange
@@ -13,13 +14,9 @@ from bs4 import BeautifulSoup
 #config
 config = {'crawl_path': None, 'download_path': None}
 one_file = False #create a single crawljob for Series with multiple season
-
 Down_YT = True # BETA
 def interactive_mode():
-    try:
-        keyword = input("Keyword: ")
-    except KeyboardInterrupt:
-        sys.exit("\n")
+    keyword = input("Keyword: ")
     return keyword
 def cli_mode():
     keyword = None
@@ -98,6 +95,8 @@ def create_crawl(slug,id,ep_list, season):
         f.close()
 
 def crawljob_movie(link,slug):
+    signal.signal(signal.SIGTERM, sig_handler)
+    signal.signal(signal.SIGINT, sig_handler)
     name = slug +'.crawljob'
     if config['download_path'] == None:
         download_path = os.path.dirname(os.path.realpath(__file__))
@@ -117,14 +116,22 @@ def crawljob_movie(link,slug):
         f.write("\tautoConfirm=TRUE\n")
         f.write("}\n")
         f.close()
-
+def sig_handler(_signo, _stack_frame):
+    print("\n")
+    sys.exit(0)
 def main():
+    signal.signal(signal.SIGTERM, sig_handler)
+    signal.signal(signal.SIGINT, sig_handler)
     if len(sys.argv) == 1:
         keyword = interactive_mode()
     else:
         keyword = cli_mode()
     URL = "https://streamingcommunity.to/search?q=%s"%keyword
-    r = requests.get(url = URL, params = {}) 
+    try:
+        r = requests.get(url = URL, params = {},timeout = 3) 
+    except Exception as e:
+        print("An error occured")
+        sys.exit()
     pastebin_url = r.text 
     my_html = pastebin_url
     parsed_html = BeautifulSoup(my_html,"html.parser")
@@ -144,19 +151,15 @@ def main():
         type_element.append(i['type'])
         print("Result:\t" + str(num))
         print ("\x1b[32m" + i['name'] + " \x1b[36m"+ i['type'] + ' ' +i['release_date']+ "\x1b[33m" + " Seasons: " + str(i['seasons_count']) + "\x1b[0m")
-        print("Plot:\t"+ i['plot'])
+        print("Plot:\n"+ i['plot'])
         print("-------------------")
         num +=1
     print("-------------------")
     print("-------------------")
-    try:
-        id = int(input("Result:"))
-    except KeyboardInterrupt:
-        sys.exit("\n")
+    id = int(input("Result:"))
     #get info
     slug = str(ser_slug[id-1])
     identifier = str(ser_id[id-1])
-
     URL = ("https://streamingcommunity.to/titles/%s-%s"%(identifier,slug))
     r = requests.get(url = URL, params = {}) 
     pastebin_url = r.text 
@@ -201,15 +204,6 @@ def help():
             f"\t--crawlpath (Path):\t\tDestination folder for the crawljobs\n" \
             f"\t-h, --help:\t\t\tShow this screen\n"
     print(usage)
-def my_hook(self, d):
-        if d['status'] == 'finished':
-            file_tuple = os.path.split(os.path.abspath(d['filename']))
-            print("Done downloading {}".format(file_tuple[1]))
-        if d['status'] == 'downloading':
-            p = d['_percent_str']
-            p = p.replace('%','')
-            self.progress.setValue(float(p))
-            print(d['filename'], d['_percent_str'], d['_eta_str'])
 
 def youtube_downloader_movie(link,slug):
     content_dir = os.path.join("Download", slug)
@@ -295,7 +289,10 @@ def youtube_downloader(ep_list,slug,id):
             ep_id = i['id']
             with YoutubeDL(ydl_opts) as ydl:
                 try:
-                    episode_pbar.set_description("Processing %s: " % slug + 'Season ' + str(season) +', episode: ' + str(episode_n))
+                    if len(error_download) > 0:
+                        episode_pbar.set_description("Processing %s(\x1b[31m%d error\x1b[0m): " % (slug,len(error_download)) + 'Season ' + str(season) +', episode: ' + str(episode_n))
+                    else:
+                        episode_pbar.set_description("Processing %s: " % slug + 'Season ' + str(season) +', episode: ' + str(episode_n))
                     link = "https://streamingcommunity.to/watch/%s?e=%s\n"%(id,ep_id)
                     r = requests.get(url = link, params = {}) 
                     pastebin_url = r.text 
@@ -309,18 +306,22 @@ def youtube_downloader(ep_list,slug,id):
                     try:
                         r = requests.get(url = link, params = {})
                     except Exception as e:
-                        error_download.append("Error downloading season %d, episode %d\n"%(season,episode_n))
+                        error_download.append("Error downloading season %d, episode %d"%(season,episode_n))
                         skip = True
                     if(r.status_code == 200 and not skip):
                         ydl.download([link])
                     episode_pbar.update(1)
                     episode_n +=1
                 except KeyboardInterrupt:
+                    if (len(error_download) > 0):
+                        print("\n\x1b[31mError downloading %d episodes:\x1b[0m"%len(error_download))
+                        for error in error_download:
+                            print(error)
                     sys.exit()
         season += 1
         episode_n = 1
     if (len(error_download) > 0):
-        print("\nError downloading %d episodes:\n"%len(error_download))
+        print("\n\x1b[31mError downloading %d episodes:\x1b[0m"%len(error_download))
         for error in error_download:
             print(error)
 
