@@ -7,11 +7,9 @@ from shutil import which
 from youtube_dl import YoutubeDL
 from tqdm import trange
 from tqdm import tqdm
-from time import sleep
 import sys
-import re
-import ssl
 from bs4 import BeautifulSoup
+
 #config
 config = {'crawl_path': None, 'download_path': None}
 one_file = False #create a single crawljob for Series with multiple season
@@ -243,7 +241,14 @@ def youtube_downloader_movie(link,slug):
     with YoutubeDL(ydl_opts) as ydl:
         try:
             movie_pbar.set_description("Processing %s: " % slug)
-            x = ydl.download([link])
+            skip = False
+            try:
+                r = requests.get(url = link, params = {})
+            except Exception as e:
+                print("Error downloading %s\n"%slug)
+                skip = True
+            if(r.status_code == 200 and not skip):
+                ydl.download([link])
             movie_pbar.update(1)
         except KeyboardInterrupt:
             sys.exit()
@@ -265,6 +270,7 @@ def youtube_downloader(ep_list,slug,id):
             quit()
         ffmpeg_local = os.path.join( _dir, "ffmpeg", ffmpeg_dir_files[0], "bin")
     n_episoeds= 0
+    error_download = list()
     #calc numbero of episodes
     for episode in ep_list:
         ep_list_2 = episode['episodes']
@@ -299,9 +305,13 @@ def youtube_downloader(ep_list,slug,id):
                     episodes = json_data
                     ep_json = json.loads(episodes)
                     link = ep_json['video_url']
-                    #problema, se il certificato ssl è scaduto crasha, non so come skipparlo
-                    r = requests.get(url = link, params = {})
-                    if(r.status_code == 200):
+                    skip = False
+                    try:
+                        r = requests.get(url = link, params = {})
+                    except Exception as e:
+                        error_download.append("Error downloading season %d, episode %d\n"%(season,episode_n))
+                        skip = True
+                    if(r.status_code == 200 and not skip):
                         ydl.download([link])
                     episode_pbar.update(1)
                     episode_n +=1
@@ -309,6 +319,10 @@ def youtube_downloader(ep_list,slug,id):
                     sys.exit()
         season += 1
         episode_n = 1
+    if (len(error_download) > 0):
+        print("\nError downloading %d episodes:\n"%len(error_download))
+        for error in error_download:
+            print(error)
 
 if __name__ == "__main__":
     main()
