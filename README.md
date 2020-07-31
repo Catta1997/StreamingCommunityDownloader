@@ -2,6 +2,7 @@
 
 Downloader per StreamingCommunityDownloader.to
 
+[![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
 - Installa Python3
 - Installa le dipendenze presenti in requerements.txt
 ### Create virtualenv
