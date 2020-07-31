@@ -14,21 +14,32 @@ from bs4 import BeautifulSoup
 #config
 config = {'crawl_path': None, 'download_path': None}
 one_file = False #create a single crawljob for Series with multiple season
-Down_YT = True # BETA
+Down_YT = False # BETA
+All_seasons = False
 def interactive_mode():
     keyword = input("Keyword: ")
     return keyword
 def cli_mode():
+    global Down_YT
+    global  one_file
+    global All_seasons
     keyword = None
     global config
     argv = sys.argv[1:]
     try:
-        opts, args = getopt.getopt(argv, 'k:hv',['keyword=', 'crawlpath=', 'jdownloadpath='])
+        opts, args = getopt.getopt(argv, 'k:yhvos',['keyword=', 'crawlpath=', 'jdownloadpath=','onefile'])
     except getopt.GetoptError:
         # stampa l'informazione di aiuto ed esce:
         help()
         sys.exit(2)
     for opt, arg in opts:
+        if opt in ['-s']:
+            All_seasons = True
+        if opt in ['-y']:
+            Down_YT = True
+        if opt in ['-o','--onefile']:
+            one_file = True
+            Down_YT = False
         if opt in ['-k', '--keyword']:
             keyword = arg
         if opt in ['--jdownloadpath']:
@@ -143,10 +154,13 @@ def main():
     ser_id = list()
     ser_slug = list()
     type_element = list()
+    serie_season = list()
     for i in playerstuff:
         id = i['id']
         ser_id.append(id)
         slug = i['slug']
+        season = int(i['seasons_count'])
+        serie_season.append(season)
         ser_slug.append(slug)
         type_element.append(i['type'])
         print("Result:\t" + str(num))
@@ -176,7 +190,6 @@ def main():
         episodes = json_data
         ep_json = json.loads(episodes)
         link = ep_json['video_url']
-        print(link)
         if Down_YT:
             youtube_downloader_movie(link,slug)
         else:
@@ -190,18 +203,30 @@ def main():
             youtube_downloader(ep_json_2,slug,identifier)
         else:
             if not one_file:
-                x = 1
-                for k in ep_json_2:
+                if All_seasons:
+                    seas_sel = int(input('Season: '))
+                    if(seas_sel>serie_season[id-1]):
+                        print("Only %d season"%serie_season[id-1])
+                        sys.exit("\n")
+                    k = ep_json_2[seas_sel-1]
                     test = k['episodes']
-                    create_crawl(slug,id,test,x)
-                    x +=1
+                    create_crawl(slug,id,test,seas_sel)
+                else:
+                    x = 1
+                    for k in ep_json_2:
+                        test = k['episodes']
+                        create_crawl(slug,id,test,x)
+                        x +=1
             else:
                 create_crawl_all(slug,id,ep_json_2)
 
 def help():
     usage = f"\t-k, --keyword (str):\t\tSpecify the keyword to search\n" \
             f"\t--jdownloadpath (Path):\t\tDestination folder for the anime dir\n" \
+            f"\t-o,--onefile:\t\t\tCreate only one crawljob instead one for each season\n" \
+            f"\t-y:\t\t\t\tDownload using YT_Downloader\n" \
             f"\t--crawlpath (Path):\t\tDestination folder for the crawljobs\n" \
+            f"\t-s:\t\t\t\t Download or add to crawljob all seasons\n"\
             f"\t-h, --help:\t\t\tShow this screen\n"
     print(usage)
 
