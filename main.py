@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 # config
 config = {'crawl_path': None, 'download_path': None}
 one_file = False  # create a single crawljob for Series with multiple season
-Down_YT = False  # BETA
+Down_YT = False
 All_seasons = False
 
 
@@ -263,7 +263,7 @@ def help():
 
 
 def youtube_downloader_movie(link, slug):
-    if(config['download_path'] != None):
+    if(config['download_path'] is not None):
         content_dir = os.path.join(config['download_path'], slug)
     else:
         content_dir = os.path.join("Download", slug)
