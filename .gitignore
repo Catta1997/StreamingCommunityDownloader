@@ -1,3 +1,5 @@
 *.crawljob
 *.DS_Store
-ffmpeg/ffmpeg-20200213-6d37ca8-macos64-static/
+ffmpeg/
+venv/
+Download/
