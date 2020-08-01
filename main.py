@@ -18,7 +18,7 @@ config = {'crawl_path': None, 'download_path': None}
 one_file = False  # create a single crawljob for Series with multiple season
 Down_YT = False
 All_seasons = False
-
+crawljob = False
 
 def interactive_mode():
     keyword = input("Keyword: ")
@@ -29,12 +29,13 @@ def cli_mode():
     global Down_YT
     global one_file
     global All_seasons
-    keyword = None
+    global crawljob
     global config
+    keyword = None
     argv = sys.argv[1:]
     try:
         opts, args = getopt.getopt(
-            argv, 'k:yhvos', ['keyword=', 'crawlpath=', 'downloadpath=', 'onefile'])
+            argv, 'k:yhvosc', ['keyword=', 'crawlpath=', 'downloadpath=', 'onefile'])
     except getopt.GetoptError:
         # stampa l'informazione di aiuto ed esce:
         help()
@@ -50,20 +51,22 @@ def cli_mode():
             if (config['crawl_path'] != None):
                 print("Cannot specify crawlpath with -y param")
                 sys.exit()
-        if opt in ['-o', '--onefile']:
-            one_file = True
-            if Down_YT:
-                print("Cannot use -o and -y")
-                sys.exit()
+        if opt in ['-c']:
+            crawljob = True
+            if opt in ['-o', '--onefile']:
+                one_file = True
+                if Down_YT:
+                    print("Cannot use -o and -y")
+                    sys.exit()
+            if opt in ['--crawlpath']:
+                if Down_YT:
+                    print("Cannot use --crawlpath with -y")
+                    sys.exit()
+            config['crawl_path'] = arg
         if opt in ['-k', '--keyword']:
             keyword = arg
         if opt in ['--downloadpath']:
             config['download_path'] = arg
-        if opt in ['--crawlpath']:
-            if Down_YT:
-                print("Cannot use --crawlpath with -y")
-                sys.exit()
-            config['crawl_path'] = arg
         if opt in ['-h', '--help']:
             help()
             sys.exit(0)
@@ -222,8 +225,10 @@ def main():
         link = ep_json['video_url']
         if Down_YT:
             youtube_downloader_movie(link, slug)
-        else:
+        elif crawljob:
             crawljob_movie(link, slug)
+        else:
+            print(link)
     else:
         json_data_2 = parsed_html.find('season-select')['seasons']
         episodes_2 = json_data_2
@@ -231,7 +236,7 @@ def main():
         text = ep_json_2[0]['episodes']
         if Down_YT:
             youtube_downloader(ep_json_2, slug, identifier)
-        else:
+        elif crawljob:
             if not one_file:
                 if All_seasons:
                     seas_sel = int(input('Season: '))
@@ -249,6 +254,14 @@ def main():
                         x += 1
             else:
                 create_crawl_all(slug, id, ep_json_2)
+        else:
+            x = 1
+            for k in ep_json_2:
+                test = k['episodes']
+                for i in test:
+                    ep_id = i['id']
+                    print("https://streamingcommunity.to/watch/%s?e=%s" %(id, ep_id))
+                x += 1
 
 
 def help():
