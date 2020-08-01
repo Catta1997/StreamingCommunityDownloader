@@ -1,8 +1,10 @@
 # StreamingCommunityDownloader
 
+[![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)   
 Downloader per StreamingCommunityDownloader.to
-
-[![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
+        
+### Requirements:
+![GitHub Pipenv locked Python version](https://img.shields.io/github/pipenv/locked/python-version/Catta1997/StreamingCommunityDownloader) ![GitHub Pipenv locked dependency version](https://img.shields.io/github/pipenv/locked/dependency-version/Catta1997/StreamingCommunityDownloader/youtube-dl?color=yellow) ![GitHub Pipenv locked dependency version](https://img.shields.io/github/pipenv/locked/dependency-version/Catta1997/StreamingCommunityDownloader/tqdm?color=yellow) ![GitHub Pipenv locked dependency version](https://img.shields.io/github/pipenv/locked/dependency-version/Catta1997/StreamingCommunityDownloader/requests?color=yellow) ![GitHub Pipenv locked dependency version](https://img.shields.io/github/pipenv/locked/dependency-version/Catta1997/StreamingCommunityDownloader/beautifulsoup4?color=yellow)
 - Installa Python3
 - Installa le dipendenze presenti in requerements.txt
 ### Create virtualenv
