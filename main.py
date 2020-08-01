@@ -196,8 +196,10 @@ def main():
         ser_slug.append(slug)
         type_element.append(i['type'])
         print("Result:\t" + str(num))
-        print("\x1b[32m" + i['name'] + " \x1b[36m" + i['type'] + ' ' + i['release_date'] +
-              "\x1b[33m" + " Seasons: " + str(i['seasons_count']) + "\x1b[0m")
+        if("movie" not in i['type']):
+            print("\x1b[32m" + i['name'] + " \x1b[36m" + i['type'] + ' ' + i['release_date'] + "\x1b[33m" + " Seasons: " + str(i['seasons_count']) + "\x1b[0m")
+        else:
+            print("\x1b[32m" + i['name'] + " \x1b[36m" + i['type'] + ' ' + i['release_date'] + "\x1b[33m" + "\x1b[0m")
         print("Plot:\n" + i['plot'])
         print("-------------------")
         num += 1
