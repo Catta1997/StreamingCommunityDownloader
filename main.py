@@ -62,7 +62,7 @@ def cli_mode():
                 if Down_YT:
                     print("Cannot use --crawlpath with -y")
                     sys.exit()
-            config['crawl_path'] = arg
+                config['crawl_path'] = arg
         if opt in ['-k', '--keyword']:
             keyword = arg
         if opt in ['--downloadpath']:
