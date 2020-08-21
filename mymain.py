@@ -269,7 +269,7 @@ def main(word):
                     ep_id = i['id']
                     print("https://streamingcommunity.to/watch/%s?e=%s" %(id, ep_id))
                 x += 1
-
+    exit(0)
 
 def help():
     usage = f"\t-k, --keyword (str):\t\tSpecify the keyword to search\n" \
