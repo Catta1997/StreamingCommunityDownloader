@@ -1,3 +1,4 @@
 import mymain
 
-mymain.test("chicago")
+def test_answer():
+    mymain.test("chicago")
